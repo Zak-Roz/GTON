@@ -1,0 +1,7 @@
+FROM node:18
+
+WORKDIR /mq
+COPY . /mq
+RUN npm i
+
+CMD ["npm", "start", "-watch", "mq-backend-app"]

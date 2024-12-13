@@ -1,0 +1,100 @@
+version: '3.8'
+
+networks:
+  test_backend_net:
+    driver: bridge
+
+services:
+  rabbitmq:
+    image: heidiks/rabbitmq-delayed-message-exchange:latest
+    container_name: 'rabbitmq'
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+    networks:
+      - test_backend_net
+
+  mysql:
+    image: mysql:8
+    container_name: 'mysql-rabbitmq'
+    restart: 'unless-stopped'
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=testdb
+    ports:
+      - 3306:3306
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - test_backend_net
+
+  main-backend-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.main-backend-app
+    container_name: main-backend-app
+    command: sh -c "sleep 10 && npm start -watch"
+    working_dir: /main
+    volumes:
+      - .:/main
+      - /main/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mysql
+      - rabbitmq
+    environment:
+      DATABASE_HOST: mysql
+      DATABASE_PORT: 3306
+      DATABASE_USER: root
+      DATABASE_PASSWORD: root
+      DATABASE_NAME: testdb
+      RABBITMQ_HOST: rabbitmq
+    networks:
+      - test_backend_net
+  
+  mq-backend-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.mq-backend-app
+    container_name: mq-backend-app
+    command: sh -c "sleep 10 && npm start -watch mq-backend-app"
+    working_dir: /mq
+    volumes:
+      - .:/mq
+      - /mq/node_modules
+    depends_on:
+      - mysql
+      - rabbitmq
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+    networks:
+      - test_backend_net
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    container_name: migrate
+    depends_on:
+      - mysql
+    volumes:
+      - .:/usr/src/app
+    networks:
+      - test_backend_net
+    command: >
+      sh -c "
+      sleep 10;
+      npx sequelize db:migrate --url mysql://root:root@mysql:3306/testdb;
+      "
+
+volumes:
+  rabbitmq_data:
+  mysql_data:

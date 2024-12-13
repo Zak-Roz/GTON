@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/main-backend-app/src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/main-backend-app/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/main-backend-app",
+  "projects": {
+    "main-backend-app": {
+      "type": "application",
+      "root": "apps/main-backend-app",
+      "entryFile": "main",
+      "sourceRoot": "apps/main-backend-app/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/main-backend-app/tsconfig.app.json"
+      }
+    },
+    "mq-backend-app": {
+      "type": "application",
+      "root": "apps/mq-backend-app",
+      "entryFile": "main",
+      "sourceRoot": "apps/mq-backend-app/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/mq-backend-app/tsconfig.app.json"
+      }
+    }
+  }
+}
